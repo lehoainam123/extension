@@ -7,13 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ KẾT NỐI MONGODB ATLAS (lấy từ biến môi trường)
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
-.then(() => console.log("✅ MongoDB connected"))
-.catch(err => console.log("❌ DB Error:", err));
+// ✅ CONNECT MONGODB (KHÔNG dùng option cũ nữa)
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log("✅ MongoDB connected"))
+    .catch(err => console.log("❌ DB Error:", err));
 
 // MODEL
 const User = mongoose.model("User", {
@@ -22,37 +19,47 @@ const User = mongoose.model("User", {
     lastJoinDate: String
 });
 
-// API JOIN
+// API: người tham gia
 app.post("/join", async (req, res) => {
-    const { name } = req.body;
-    const today = new Date().toISOString().slice(0, 10);
+    try {
+        const { name } = req.body;
+        const today = new Date().toISOString().slice(0, 10);
 
-    let user = await User.findOne({ name });
+        let user = await User.findOne({ name });
 
-    if (!user) {
-        user = new User({
-            name,
-            totalSessions: 1,
-            lastJoinDate: today
-        });
-    } else {
-        if (user.lastJoinDate !== today) {
-            user.totalSessions++;
-            user.lastJoinDate = today;
+        if (!user) {
+            user = new User({
+                name,
+                totalSessions: 1,
+                lastJoinDate: today
+            });
+        } else {
+            if (user.lastJoinDate !== today) {
+                user.totalSessions++;
+                user.lastJoinDate = today;
+            }
         }
+
+        await user.save();
+        res.json(user);
+
+    } catch (err) {
+        console.log("❌ Error:", err);
+        res.status(500).send("Server error");
     }
-
-    await user.save();
-    res.json(user);
 });
 
-// API LIST
+// API: danh sách
 app.get("/list", async (req, res) => {
-    const users = await User.find().sort({ totalSessions: -1 });
-    res.json(users);
+    try {
+        const users = await User.find().sort({ totalSessions: -1 });
+        res.json(users);
+    } catch (err) {
+        res.status(500).send("Error");
+    }
 });
 
-// ✅ FIX PORT CHO RENDER
+// ✅ FIX PORT cho Render
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
