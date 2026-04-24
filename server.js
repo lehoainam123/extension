@@ -7,8 +7,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// CONNECT DB
-mongoose.connect("mongodb://127.0.0.1:27017/meet");
+// ✅ KẾT NỐI MONGODB ATLAS (lấy từ biến môi trường)
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => console.log("✅ MongoDB connected"))
+.catch(err => console.log("❌ DB Error:", err));
 
 // MODEL
 const User = mongoose.model("User", {
@@ -47,4 +52,9 @@ app.get("/list", async (req, res) => {
     res.json(users);
 });
 
-app.listen(3000, () => console.log("Server chạy: http://localhost:3000"));
+// ✅ FIX PORT CHO RENDER
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log("🚀 Server chạy port " + PORT);
+});
